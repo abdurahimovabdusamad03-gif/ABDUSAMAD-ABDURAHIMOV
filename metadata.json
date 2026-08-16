@@ -1,0 +1,6 @@
+{
+  "name": "ERP Master - Sotuv va Ombor",
+  "description": "Sotuv, Ombor, Mijozlar va AI Taxlilchi bilan jihozlangan ko'p tilli ERP tizimi",
+  "requestFramePermissions": ["camera"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

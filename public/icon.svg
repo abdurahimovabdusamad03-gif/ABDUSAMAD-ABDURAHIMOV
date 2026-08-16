@@ -1,0 +1,94 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <!-- Rich Premium Dark Background -->
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0b0f19" />
+      <stop offset="50%" stop-color="#111827" />
+      <stop offset="100%" stop-color="#030712" />
+    </linearGradient>
+
+    <!-- Luxury Gold Accent -->
+    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fde68a" />
+      <stop offset="30%" stop-color="#f59e0b" />
+      <stop offset="100%" stop-color="#d97706" />
+    </linearGradient>
+
+    <!-- Vibrant Orange-Amber Core Gradient -->
+    <linearGradient id="coreGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fbbf24" />
+      <stop offset="50%" stop-color="#f59e0b" />
+      <stop offset="100%" stop-color="#ea580c" />
+    </linearGradient>
+
+    <!-- Radial Glow behind Center -->
+    <radialGradient id="radialGlow" cx="50%" cy="45%" r="60%">
+      <stop offset="0%" stop-color="#f59e0b" stop-opacity="0.45" />
+      <stop offset="60%" stop-color="#ea580c" stop-opacity="0.15" />
+      <stop offset="100%" stop-color="#000000" stop-opacity="0" />
+    </radialGradient>
+
+    <filter id="shadowHeavy" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="12" stdDeviation="16" flood-color="#000000" flood-opacity="0.75"/>
+    </filter>
+
+    <filter id="glowEffect" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="4" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+
+  <!-- Solid Full Bleed Background (NO transparent edges for iOS & Android Maskable) -->
+  <rect width="512" height="512" fill="url(#bgGrad)" />
+
+  <!-- Outer Ring / Tech Pattern -->
+  <circle cx="256" cy="245" r="215" fill="none" stroke="#f59e0b" stroke-width="1.5" stroke-dasharray="8 8" opacity="0.25" />
+  <circle cx="256" cy="245" r="190" fill="url(#radialGlow)" />
+
+  <!-- Main Center App Shield / Squircle inside Safe Zone -->
+  <g filter="url(#shadowHeavy)">
+    <rect x="96" y="70" width="320" height="320" rx="72" fill="url(#coreGrad)" />
+    
+    <!-- Glossy Highlight Curve -->
+    <path d="M 96 142 Q 96 70 168 70 L 344 70 Q 416 70 416 142 L 416 195 Q 256 240 96 195 Z" fill="#ffffff" opacity="0.22" />
+    
+    <!-- Inner Border for 3D Finish -->
+    <rect x="99" y="73" width="314" height="314" rx="69" fill="none" stroke="#fde68a" stroke-width="3" opacity="0.6" />
+  </g>
+
+  <!-- Crown Stars / Excellence Badges -->
+  <g filter="url(#glowEffect)">
+    <!-- Center Top Star -->
+    <polygon points="256,92 263,107 279,110 268,121 270,137 256,129 242,137 244,121 233,110 249,107" fill="#ffffff" />
+    <!-- Left Star -->
+    <polygon points="180,114 184,123 194,125 187,132 188,142 180,137 172,142 173,132 166,125 176,123" fill="#ffffff" opacity="0.85" />
+    <!-- Right Star -->
+    <polygon points="332,114 336,123 346,125 339,132 340,142 332,137 324,142 325,132 318,125 328,123" fill="#ffffff" opacity="0.85" />
+  </g>
+
+  <!-- Shopping Cart & Smart Logistics Emblem -->
+  <g id="cart">
+    <!-- Handle Arc -->
+    <path d="M 216 190 C 216 136 296 136 296 190" fill="none" stroke="#0f172a" stroke-width="16" stroke-linecap="round" />
+    <path d="M 216 190 C 216 140 296 140 296 190" fill="none" stroke="#ffffff" stroke-width="10" stroke-linecap="round" />
+
+    <!-- Basket Body -->
+    <path d="M 166 190 L 346 190 L 322 300 L 190 300 Z" fill="#0b0f19" stroke="#ffffff" stroke-width="12" stroke-linejoin="round" />
+
+    <!-- Lightning Bolt (Fast Sale & Analytics) in center of basket -->
+    <path d="M 264 205 L 240 245 L 258 245 L 248 285 L 274 240 L 256 240 Z" fill="url(#goldGrad)" stroke="#fde68a" stroke-width="2" stroke-linejoin="round"/>
+
+    <!-- Wheels -->
+    <circle cx="210" cy="328" r="16" fill="#ffffff" />
+    <circle cx="210" cy="328" r="8" fill="#0b0f19" />
+    
+    <circle cx="302" cy="328" r="16" fill="#ffffff" />
+    <circle cx="302" cy="328" r="8" fill="#0b0f19" />
+  </g>
+
+  <!-- Bottom Brand Title Pill (Visible in Masked icon as well) -->
+  <g filter="url(#shadowHeavy)">
+    <rect x="146" y="414" width="220" height="48" rx="24" fill="#0b0f19" stroke="url(#goldGrad)" stroke-width="3.5" />
+    <text x="256" y="446" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="22" font-weight="900" fill="#fde68a" text-anchor="middle" letter-spacing="4">ERP MASTER</text>
+  </g>
+</svg>
