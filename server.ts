@@ -425,19 +425,16 @@ function findUserAcrossAllCompanies(loginIdentifier: string, inputPin: string) {
     }
   }
 
-  // Fallback for default admin/1234 on comp_default
-  if (cleanTermNoSpace === 'admin' || cleanPhoneDigits.length >= 7) {
+  // Fallback ONLY for explicit default 'admin' with pin '1234' on comp_default
+  if (cleanTermNoSpace === 'admin' && (cleanInputPin === '1234' || cleanInputPin === 'admin')) {
     const defaultDb = loadCompanyDatabase('comp_default');
-    const adminUser = (defaultDb.users || []).find((u: any) => u.role === 'admin');
+    const adminUser = (defaultDb.users || []).find((u: any) => u.role === 'admin' || u.username === 'admin');
     if (adminUser) {
-      const adminPin = (adminUser.pin || '').trim().replace(/\s+/g, '');
-      if (cleanInputPin === adminPin || cleanInputPin === '1234') {
-        return {
-          companyId: 'comp_default',
-          user: adminUser,
-          fullData: defaultDb,
-        };
-      }
+      return {
+        companyId: 'comp_default',
+        user: adminUser,
+        fullData: defaultDb,
+      };
     }
   }
 
@@ -516,23 +513,40 @@ async function startServer() {
       const companyId = extractCompanyId(req);
       const current = loadCompanyDatabase(companyId);
 
+      const isExplicitReset = Boolean(
+        incoming.resetTimestamp && incoming.resetTimestamp !== current.resetTimestamp
+      );
+
+      const safeMergeList = (incomingList: any, currentList: any): any[] => {
+        if (isExplicitReset) {
+          return Array.isArray(incomingList) ? incomingList : [];
+        }
+        if (Array.isArray(incomingList)) {
+          if (incomingList.length === 0 && Array.isArray(currentList) && currentList.length > 0) {
+            return currentList; // Protect against empty payload wiping existing data
+          }
+          return incomingList;
+        }
+        return Array.isArray(currentList) ? currentList : [];
+      };
+
       const merged = {
         ...current,
         companyId,
-        users: Array.isArray(incoming.users) ? deduplicateUsers(incoming.users) : current.users,
-        products: Array.isArray(incoming.products) ? incoming.products : current.products,
-        categories: Array.isArray(incoming.categories) ? incoming.categories : current.categories,
-        sales: Array.isArray(incoming.sales) ? incoming.sales : current.sales,
-        customers: Array.isArray(incoming.customers) ? incoming.customers : current.customers,
-        debtPayments: Array.isArray(incoming.debtPayments) ? incoming.debtPayments : current.debtPayments,
-        stockTransfers: Array.isArray(incoming.stockTransfers) ? incoming.stockTransfers : current.stockTransfers,
-        expenses: Array.isArray(incoming.expenses) ? incoming.expenses : current.expenses,
-        partnerStores: Array.isArray(incoming.partnerStores) ? incoming.partnerStores : current.partnerStores,
-        partnerTransactions: Array.isArray(incoming.partnerTransactions) ? incoming.partnerTransactions : current.partnerTransactions,
-        suppliers: Array.isArray(incoming.suppliers) ? incoming.suppliers : current.suppliers,
-        stockIntakes: Array.isArray(incoming.stockIntakes) ? incoming.stockIntakes : current.stockIntakes,
-        supplierPayments: Array.isArray(incoming.supplierPayments) ? incoming.supplierPayments : current.supplierPayments,
-        activityLogs: Array.isArray(incoming.activityLogs) ? incoming.activityLogs : current.activityLogs,
+        users: Array.isArray(incoming.users) && incoming.users.length > 0 ? deduplicateUsers(incoming.users) : (current.users || []),
+        products: safeMergeList(incoming.products, current.products),
+        categories: safeMergeList(incoming.categories, current.categories),
+        sales: safeMergeList(incoming.sales, current.sales),
+        customers: safeMergeList(incoming.customers, current.customers),
+        debtPayments: safeMergeList(incoming.debtPayments, current.debtPayments),
+        stockTransfers: safeMergeList(incoming.stockTransfers, current.stockTransfers),
+        expenses: safeMergeList(incoming.expenses, current.expenses),
+        partnerStores: safeMergeList(incoming.partnerStores, current.partnerStores),
+        partnerTransactions: safeMergeList(incoming.partnerTransactions, current.partnerTransactions),
+        suppliers: safeMergeList(incoming.suppliers, current.suppliers),
+        stockIntakes: safeMergeList(incoming.stockIntakes, current.stockIntakes),
+        supplierPayments: safeMergeList(incoming.supplierPayments, current.supplierPayments),
+        activityLogs: safeMergeList(incoming.activityLogs, current.activityLogs),
         settings: incoming.settings ? { ...(current.settings || {}), ...incoming.settings, companyId } : current.settings,
         resetTimestamp: incoming.resetTimestamp || current.resetTimestamp,
         lastUpdated: new Date().toISOString(),

@@ -686,8 +686,15 @@ export const ERPProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const [companyId, setCompanyId] = useState<string>(() => {
     if (typeof window !== 'undefined') {
+      const savedUser = localStorage.getItem('erp_current_user');
+      if (savedUser) {
+        try {
+          const u = JSON.parse(savedUser);
+          if (u && u.companyId) return u.companyId;
+        } catch {}
+      }
       const saved = localStorage.getItem('erp_current_company_id');
-      if (saved) return saved;
+      if (saved && saved !== 'comp_default') return saved;
     }
     return 'comp_default';
   });
@@ -696,12 +703,23 @@ export const ERPProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   useEffect(() => {
     companyIdRef.current = companyId;
-    if (companyId) {
+    if (companyId && companyId !== 'comp_default') {
       try {
         localStorage.setItem('erp_current_company_id', companyId);
       } catch {}
     }
   }, [companyId]);
+
+  // Keep companyId in sync with currentUser
+  useEffect(() => {
+    if (currentUser?.companyId && currentUser.companyId !== companyId) {
+      setCompanyId(currentUser.companyId);
+      companyIdRef.current = currentUser.companyId;
+      try {
+        localStorage.setItem('erp_current_company_id', currentUser.companyId);
+      } catch {}
+    }
+  }, [currentUser]);
 
   // Sync notifications to local storage
   useEffect(() => {
@@ -920,49 +938,136 @@ export const ERPProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             setStockIntakes([]);
             setSupplierPayments([]);
           } else {
+            // Non-destructive hydration: if server has data, update. If server is empty but local has data, push local data to server
             if (Array.isArray(d.products)) {
-              setProducts(d.products);
-              try { localStorage.setItem('erp_products', JSON.stringify(d.products)); } catch {}
+              if (d.products.length > 0) {
+                setProducts(d.products);
+                try { localStorage.setItem('erp_products', JSON.stringify(d.products)); } catch {}
+              } else {
+                setProducts((prev) => {
+                  if (prev.length > 0) {
+                    triggerServerSync({ products: prev });
+                    return prev;
+                  }
+                  return [];
+                });
+              }
             }
             if (Array.isArray(d.sales)) {
-              setSales(d.sales);
-              try { localStorage.setItem('erp_sales', JSON.stringify(d.sales)); } catch {}
+              if (d.sales.length > 0) {
+                setSales(d.sales);
+                try { localStorage.setItem('erp_sales', JSON.stringify(d.sales)); } catch {}
+              } else {
+                setSales((prev) => {
+                  if (prev.length > 0) {
+                    triggerServerSync({ sales: prev });
+                    return prev;
+                  }
+                  return [];
+                });
+              }
             }
             if (Array.isArray(d.customers)) {
-              setCustomers(d.customers);
-              try { localStorage.setItem('erp_customers', JSON.stringify(d.customers)); } catch {}
+              if (d.customers.length > 0) {
+                setCustomers(d.customers);
+                try { localStorage.setItem('erp_customers', JSON.stringify(d.customers)); } catch {}
+              } else {
+                setCustomers((prev) => {
+                  if (prev.length > 0) {
+                    triggerServerSync({ customers: prev });
+                    return prev;
+                  }
+                  return [];
+                });
+              }
             }
             if (Array.isArray(d.debtPayments)) {
-              setDebtPayments(d.debtPayments);
-              try { localStorage.setItem('erp_debt_payments', JSON.stringify(d.debtPayments)); } catch {}
+              if (d.debtPayments.length > 0) {
+                setDebtPayments(d.debtPayments);
+                try { localStorage.setItem('erp_debt_payments', JSON.stringify(d.debtPayments)); } catch {}
+              } else {
+                setDebtPayments((prev) => (prev.length > 0 ? prev : []));
+              }
             }
             if (Array.isArray(d.stockTransfers)) {
-              setStockTransfers(d.stockTransfers);
-              try { localStorage.setItem('erp_stock_transfers', JSON.stringify(d.stockTransfers)); } catch {}
+              if (d.stockTransfers.length > 0) {
+                setStockTransfers(d.stockTransfers);
+                try { localStorage.setItem('erp_stock_transfers', JSON.stringify(d.stockTransfers)); } catch {}
+              } else {
+                setStockTransfers((prev) => (prev.length > 0 ? prev : []));
+              }
             }
             if (Array.isArray(d.expenses)) {
-              setExpenses(d.expenses);
-              try { localStorage.setItem('erp_expenses', JSON.stringify(d.expenses)); } catch {}
+              if (d.expenses.length > 0) {
+                setExpenses(d.expenses);
+                try { localStorage.setItem('erp_expenses', JSON.stringify(d.expenses)); } catch {}
+              } else {
+                setExpenses((prev) => {
+                  if (prev.length > 0) {
+                    triggerServerSync({ expenses: prev });
+                    return prev;
+                  }
+                  return [];
+                });
+              }
             }
             if (Array.isArray(d.partnerStores)) {
-              setPartnerStores(d.partnerStores);
-              try { localStorage.setItem('erp_partner_stores', JSON.stringify(d.partnerStores)); } catch {}
+              if (d.partnerStores.length > 0) {
+                setPartnerStores(d.partnerStores);
+                try { localStorage.setItem('erp_partner_stores', JSON.stringify(d.partnerStores)); } catch {}
+              } else {
+                setPartnerStores((prev) => {
+                  if (prev.length > 0) {
+                    triggerServerSync({ partnerStores: prev });
+                    return prev;
+                  }
+                  return [];
+                });
+              }
             }
             if (Array.isArray(d.partnerTransactions)) {
-              setPartnerTransactions(d.partnerTransactions);
-              try { localStorage.setItem('erp_partner_transactions', JSON.stringify(d.partnerTransactions)); } catch {}
+              if (d.partnerTransactions.length > 0) {
+                setPartnerTransactions(d.partnerTransactions);
+                try { localStorage.setItem('erp_partner_transactions', JSON.stringify(d.partnerTransactions)); } catch {}
+              } else {
+                setPartnerTransactions((prev) => (prev.length > 0 ? prev : []));
+              }
             }
             if (Array.isArray(d.suppliers)) {
-              setSuppliers(d.suppliers);
-              try { localStorage.setItem('erp_suppliers', JSON.stringify(d.suppliers)); } catch {}
+              if (d.suppliers.length > 0) {
+                setSuppliers(d.suppliers);
+                try { localStorage.setItem('erp_suppliers', JSON.stringify(d.suppliers)); } catch {}
+              } else {
+                setSuppliers((prev) => {
+                  if (prev.length > 0) {
+                    triggerServerSync({ suppliers: prev });
+                    return prev;
+                  }
+                  return [];
+                });
+              }
             }
             if (Array.isArray(d.stockIntakes)) {
-              setStockIntakes(d.stockIntakes);
-              try { localStorage.setItem('erp_stock_intakes', JSON.stringify(d.stockIntakes)); } catch {}
+              if (d.stockIntakes.length > 0) {
+                setStockIntakes(d.stockIntakes);
+                try { localStorage.setItem('erp_stock_intakes', JSON.stringify(d.stockIntakes)); } catch {}
+              } else {
+                setStockIntakes((prev) => {
+                  if (prev.length > 0) {
+                    triggerServerSync({ stockIntakes: prev });
+                    return prev;
+                  }
+                  return [];
+                });
+              }
             }
             if (Array.isArray(d.supplierPayments)) {
-              setSupplierPayments(d.supplierPayments);
-              try { localStorage.setItem('erp_supplier_payments', JSON.stringify(d.supplierPayments)); } catch {}
+              if (d.supplierPayments.length > 0) {
+                setSupplierPayments(d.supplierPayments);
+                try { localStorage.setItem('erp_supplier_payments', JSON.stringify(d.supplierPayments)); } catch {}
+              } else {
+                setSupplierPayments((prev) => (prev.length > 0 ? prev : []));
+              }
             }
           }
 
@@ -990,8 +1095,9 @@ export const ERPProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             setSettings((prev) => {
               const localTheme = (typeof window !== 'undefined' ? localStorage.getItem('erp_theme_mode') : null) as ThemeMode | null;
               const s = {
-                ...prev,
+                ...initialSettings,
                 ...d.settings,
+                companyId: currentCompId,
                 ...(localTheme ? { themeMode: localTheme } : {}),
               };
               try { localStorage.setItem('erp_settings', JSON.stringify(s)); } catch {}
@@ -1484,29 +1590,9 @@ export const ERPProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return false;
     });
 
-    // Fallback for Admin: If logging in with phone + valid Admin PIN (or default '1234')
-    // and no specific user matched yet, match the Admin user!
-    if (!matchedUser) {
-      const adminUser = users.find((u) => u.role === 'admin') || users[0];
-      if (adminUser) {
-        const adminPin = adminUser.pin.trim().replace(/\s+/g, '');
-        if (cleanInputPin === adminPin || cleanInputPin === '1234') {
-          const updatedPhone = adminUser.phone || (cleanPhoneDigits.length >= 7 ? usernameOrPhone.trim() : adminUser.phone);
-          matchedUser = {
-            ...adminUser,
-            phone: updatedPhone,
-          };
-          // Save updated admin user to state so phone is persisted
-          setUsers((prev) =>
-            prev.map((u) => (u.id === adminUser.id ? matchedUser! : u))
-          );
-        }
-      }
-    }
-
     if (matchedUser) {
       setCurrentUser(matchedUser);
-      localStorage.setItem('erp_current_user', JSON.stringify(matchedUser));
+      try { localStorage.setItem('erp_current_user', JSON.stringify(matchedUser)); } catch {}
       return true;
     }
 
@@ -1533,7 +1619,11 @@ export const ERPProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         if (data.success && data.user) {
           const serverUser: User = data.user;
           const compId = data.companyId || serverUser.companyId || 'comp_default';
+          
+          lastLocalActionTimeRef.current = Date.now() + 6000;
+          isServerHydratedRef.current = true;
           setCompanyId(compId);
+          companyIdRef.current = compId;
           try {
             localStorage.setItem('erp_current_company_id', compId);
           } catch {}
@@ -1551,68 +1641,61 @@ export const ERPProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           setCurrentUser(serverUser);
           localStorage.setItem('erp_current_user', JSON.stringify(serverUser));
 
-          // If server returned fullData, sync local state
+          // If server returned fullData, cleanly hydrate and isolate local state
           if (data.fullData) {
             const fd = data.fullData;
-            if (Array.isArray(fd.products)) {
-              const pList = fd.products.filter((p: any) => !isDemoItem(p));
-              setProducts(pList);
-              try { localStorage.setItem('erp_products', JSON.stringify(pList)); } catch {}
-            }
-            if (Array.isArray(fd.sales)) {
-              const sList = fd.sales.filter((s: any) => !isDemoItem(s));
-              setSales(sList);
-              try { localStorage.setItem('erp_sales', JSON.stringify(sList)); } catch {}
-            }
-            if (Array.isArray(fd.customers)) {
-              const cList = fd.customers.filter((c: any) => !isDemoItem(c));
-              setCustomers(cList);
-              try { localStorage.setItem('erp_customers', JSON.stringify(cList)); } catch {}
-            }
-            if (Array.isArray(fd.debtPayments)) {
-              setDebtPayments(fd.debtPayments);
-              try { localStorage.setItem('erp_debt_payments', JSON.stringify(fd.debtPayments)); } catch {}
-            }
-            if (Array.isArray(fd.stockTransfers)) {
-              setStockTransfers(fd.stockTransfers);
-              try { localStorage.setItem('erp_stock_transfers', JSON.stringify(fd.stockTransfers)); } catch {}
-            }
-            if (Array.isArray(fd.expenses)) {
-              const eList = fd.expenses.filter((e: any) => !isDemoItem(e));
-              setExpenses(eList);
-              try { localStorage.setItem('erp_expenses', JSON.stringify(eList)); } catch {}
-            }
-            if (Array.isArray(fd.partnerStores)) {
-              const psList = fd.partnerStores.filter((p: any) => !isDemoItem(p));
-              setPartnerStores(psList);
-              try { localStorage.setItem('erp_partner_stores', JSON.stringify(psList)); } catch {}
-            }
-            if (Array.isArray(fd.partnerTransactions)) {
-              const ptList = fd.partnerTransactions.filter((t: any) => !isDemoItem(t));
-              setPartnerTransactions(ptList);
-              try { localStorage.setItem('erp_partner_transactions', JSON.stringify(ptList)); } catch {}
-            }
-            if (Array.isArray(fd.suppliers)) {
-              const spList = fd.suppliers.filter((s: any) => !isDemoItem(s));
-              setSuppliers(spList);
-              try { localStorage.setItem('erp_suppliers', JSON.stringify(spList)); } catch {}
-            }
-            if (Array.isArray(fd.stockIntakes)) {
-              const siList = fd.stockIntakes.filter((i: any) => !isDemoItem(i));
-              setStockIntakes(siList);
-              try { localStorage.setItem('erp_stock_intakes', JSON.stringify(siList)); } catch {}
-            }
-            if (Array.isArray(fd.supplierPayments)) {
-              setSupplierPayments(fd.supplierPayments);
-              try { localStorage.setItem('erp_supplier_payments', JSON.stringify(fd.supplierPayments)); } catch {}
-            }
-            if (fd.settings) {
-              setSettings((prev) => {
-                const mergedSettings = { ...prev, ...fd.settings, companyId: compId };
-                try { localStorage.setItem('erp_settings', JSON.stringify(mergedSettings)); } catch {}
-                return mergedSettings;
-              });
-            }
+            const pList = Array.isArray(fd.products) ? fd.products.filter((p: any) => !isDemoItem(p)) : [];
+            setProducts(pList);
+            try { localStorage.setItem('erp_products', JSON.stringify(pList)); } catch {}
+
+            const sList = Array.isArray(fd.sales) ? fd.sales.filter((s: any) => !isDemoItem(s)) : [];
+            setSales(sList);
+            try { localStorage.setItem('erp_sales', JSON.stringify(sList)); } catch {}
+
+            const cList = Array.isArray(fd.customers) ? fd.customers.filter((c: any) => !isDemoItem(c)) : [];
+            setCustomers(cList);
+            try { localStorage.setItem('erp_customers', JSON.stringify(cList)); } catch {}
+
+            const dpList = Array.isArray(fd.debtPayments) ? fd.debtPayments : [];
+            setDebtPayments(dpList);
+            try { localStorage.setItem('erp_debt_payments', JSON.stringify(dpList)); } catch {}
+
+            const stList = Array.isArray(fd.stockTransfers) ? fd.stockTransfers : [];
+            setStockTransfers(stList);
+            try { localStorage.setItem('erp_stock_transfers', JSON.stringify(stList)); } catch {}
+
+            const eList = Array.isArray(fd.expenses) ? fd.expenses.filter((e: any) => !isDemoItem(e)) : [];
+            setExpenses(eList);
+            try { localStorage.setItem('erp_expenses', JSON.stringify(eList)); } catch {}
+
+            const psList = Array.isArray(fd.partnerStores) ? fd.partnerStores.filter((p: any) => !isDemoItem(p)) : [];
+            setPartnerStores(psList);
+            try { localStorage.setItem('erp_partner_stores', JSON.stringify(psList)); } catch {}
+
+            const ptList = Array.isArray(fd.partnerTransactions) ? fd.partnerTransactions.filter((t: any) => !isDemoItem(t)) : [];
+            setPartnerTransactions(ptList);
+            try { localStorage.setItem('erp_partner_transactions', JSON.stringify(ptList)); } catch {}
+
+            const spList = Array.isArray(fd.suppliers) ? fd.suppliers.filter((s: any) => !isDemoItem(s)) : [];
+            setSuppliers(spList);
+            try { localStorage.setItem('erp_suppliers', JSON.stringify(spList)); } catch {}
+
+            const siList = Array.isArray(fd.stockIntakes) ? fd.stockIntakes.filter((i: any) => !isDemoItem(i)) : [];
+            setStockIntakes(siList);
+            try { localStorage.setItem('erp_stock_intakes', JSON.stringify(siList)); } catch {}
+
+            const supPayList = Array.isArray(fd.supplierPayments) ? fd.supplierPayments : [];
+            setSupplierPayments(supPayList);
+            try { localStorage.setItem('erp_supplier_payments', JSON.stringify(supPayList)); } catch {}
+
+            // Cleanly replace settings based on initialSettings + server data (no leakage of previous store's logo or colors)
+            const cleanSettings: SystemSettings = {
+              ...initialSettings,
+              ...(fd.settings || {}),
+              companyId: compId,
+            };
+            setSettings(cleanSettings);
+            try { localStorage.setItem('erp_settings', JSON.stringify(cleanSettings)); } catch {}
           }
 
           return true;
@@ -1763,8 +1846,81 @@ export const ERPProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const logout = () => {
+    // 1. Reset user, company, and sync lock
     setCurrentUser(null);
-    localStorage.removeItem('erp_current_user');
+    setCompanyId('');
+    companyIdRef.current = '';
+    isServerHydratedRef.current = false;
+    lastLocalActionTimeRef.current = Date.now() + 6000;
+
+    // 2. Reset all in-memory entities to clean state
+    setProducts([]);
+    setSales([]);
+    setCustomers([]);
+    setDebtPayments([]);
+    setStockTransfers([]);
+    setExpenses([]);
+    setPartnerStores([]);
+    setPartnerTransactions([]);
+    setSuppliers([]);
+    setStockIntakes([]);
+    setSupplierPayments([]);
+    setNotifications([]);
+    setUsers([]);
+    setSettings(initialSettings);
+
+    // 3. Purge all localStorage keys for ERP data
+    try {
+      localStorage.removeItem('erp_current_user');
+      localStorage.removeItem('erp_current_company_id');
+      localStorage.removeItem('erp_settings');
+      localStorage.removeItem('erp_products');
+      localStorage.removeItem('erp_sales');
+      localStorage.removeItem('erp_customers');
+      localStorage.removeItem('erp_debt_payments');
+      localStorage.removeItem('erp_stock_transfers');
+      localStorage.removeItem('erp_expenses');
+      localStorage.removeItem('erp_partner_stores');
+      localStorage.removeItem('erp_partner_transactions');
+      localStorage.removeItem('erp_suppliers');
+      localStorage.removeItem('erp_stock_intakes');
+      localStorage.removeItem('erp_supplier_payments');
+      localStorage.removeItem('erp_notifications');
+      localStorage.removeItem('erp_users');
+      localStorage.removeItem('erp_cart_items');
+      localStorage.removeItem('erp_sotuv_cart');
+      localStorage.removeItem('erp_pos_cart');
+      localStorage.removeItem('erp_selected_customer');
+      localStorage.removeItem('erp_quick_cart');
+      localStorage.removeItem('erp_saved_identifier');
+      localStorage.removeItem('erp_remember_me');
+    } catch {}
+
+    // 4. Reset DOM theme and accent variables back to clean default amber
+    if (typeof window !== 'undefined') {
+      const root = document.documentElement;
+      root.style.setProperty('--accent-main', '#f59e0b');
+      root.style.setProperty('--accent-hover', '#d97706');
+      root.style.setProperty('--accent-light', 'rgba(245, 158, 11, 0.2)');
+      root.style.setProperty('--accent-ring', 'rgba(245, 158, 11, 0.4)');
+      
+      const styleTag = document.getElementById('dynamic-accent-theme-styles');
+      if (styleTag) {
+        styleTag.innerHTML = `
+          .bg-amber-500 { background-color: var(--accent-main) !important; }
+          .bg-amber-600 { background-color: var(--accent-hover) !important; }
+          .bg-amber-400 { background-color: var(--accent-main) !important; }
+          .text-amber-500, .text-amber-400, .text-amber-300 { color: var(--accent-main) !important; }
+          .border-amber-500, .border-amber-400, .border-amber-600 { border-color: var(--accent-main) !important; }
+          .bg-amber-500\\/10, .bg-amber-500\\/20, .bg-amber-500\\/30 { background-color: var(--accent-light) !important; }
+          .from-amber-500 { --tw-gradient-from: var(--accent-main) !important; --tw-gradient-stops: var(--tw-gradient-via-stops, var(--tw-gradient-from) 0%, var(--tw-gradient-to) 100%) !important; }
+          .to-amber-600, .to-amber-500 { --tw-gradient-to: var(--accent-hover) !important; }
+          .hover\\:bg-amber-500:hover, .hover\\:bg-amber-400:hover { background-color: var(--accent-hover) !important; }
+          .hover\\:text-amber-500:hover, .hover\\:text-amber-400:hover { color: var(--accent-main) !important; }
+          .ring-amber-500, .ring-amber-400 { --tw-ring-color: var(--accent-main) !important; }
+        `;
+      }
+    }
   };
 
   const markNotificationAsRead = (id: string) => {
@@ -2506,17 +2662,29 @@ export const ERPProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // Add Expense (Xarajat qo'shish)
   const addExpense = (expenseData: Omit<Expense, 'id'>): Expense => {
+    lastLocalActionTimeRef.current = Date.now() + 6000;
     const newExpense: Expense = {
       ...expenseData,
       id: `exp-${Date.now()}`,
     };
-    setExpenses((prev) => [newExpense, ...prev]);
+    setExpenses((prev) => {
+      const updatedExpenses = [newExpense, ...prev];
+      try { localStorage.setItem('erp_expenses', JSON.stringify(updatedExpenses)); } catch {}
+      triggerServerSync({ expenses: updatedExpenses });
+      return updatedExpenses;
+    });
     return newExpense;
   };
 
   // Delete Expense
   const deleteExpense = (id: string) => {
-    setExpenses((prev) => prev.filter((e) => e.id !== id));
+    lastLocalActionTimeRef.current = Date.now() + 6000;
+    setExpenses((prev) => {
+      const updatedExpenses = prev.filter((e) => e.id !== id);
+      try { localStorage.setItem('erp_expenses', JSON.stringify(updatedExpenses)); } catch {}
+      triggerServerSync({ expenses: updatedExpenses });
+      return updatedExpenses;
+    });
   };
 
   // Stock Transfer: Ombor -> Do'kon
@@ -2961,25 +3129,47 @@ export const ERPProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // Partner Store Actions Implementation
   const addPartnerStore = (storeData: Omit<PartnerStore, 'id' | 'createdAt' | 'debtBalanceUzs'>): PartnerStore => {
+    lastLocalActionTimeRef.current = Date.now() + 6000;
     const newPartner: PartnerStore = {
       ...storeData,
       id: `partner-${Date.now()}`,
       debtBalanceUzs: 0,
       createdAt: new Date().toISOString().split('T')[0],
     };
-    setPartnerStores((prev) => [newPartner, ...prev]);
+    setPartnerStores((prev) => {
+      const updated = [newPartner, ...prev];
+      try { localStorage.setItem('erp_partner_stores', JSON.stringify(updated)); } catch {}
+      triggerServerSync({ partnerStores: updated });
+      return updated;
+    });
     return newPartner;
   };
 
   const updatePartnerStore = (id: string, storeData: Partial<PartnerStore>) => {
-    setPartnerStores((prev) =>
-      prev.map((s) => (s.id === id ? { ...s, ...storeData } : s))
-    );
+    lastLocalActionTimeRef.current = Date.now() + 6000;
+    setPartnerStores((prev) => {
+      const updated = prev.map((s) => (s.id === id ? { ...s, ...storeData } : s));
+      try { localStorage.setItem('erp_partner_stores', JSON.stringify(updated)); } catch {}
+      triggerServerSync({ partnerStores: updated });
+      return updated;
+    });
   };
 
   const deletePartnerStore = (id: string) => {
-    setPartnerStores((prev) => prev.filter((s) => s.id !== id));
-    setPartnerTransactions((prev) => prev.filter((t) => t.partnerId !== id));
+    lastLocalActionTimeRef.current = Date.now() + 6000;
+    let updatedStores: PartnerStore[] = [];
+    let updatedTrans: PartnerTransaction[] = [];
+    setPartnerStores((prev) => {
+      updatedStores = prev.filter((s) => s.id !== id);
+      try { localStorage.setItem('erp_partner_stores', JSON.stringify(updatedStores)); } catch {}
+      return updatedStores;
+    });
+    setPartnerTransactions((prev) => {
+      updatedTrans = prev.filter((t) => t.partnerId !== id);
+      try { localStorage.setItem('erp_partner_transactions', JSON.stringify(updatedTrans)); } catch {}
+      triggerServerSync({ partnerStores: updatedStores, partnerTransactions: updatedTrans });
+      return updatedTrans;
+    });
   };
 
   const sendStockToPartner = (
@@ -2998,6 +3188,7 @@ export const ERPProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }>,
     note?: string
   ): boolean => {
+    lastLocalActionTimeRef.current = Date.now() + 6000;
     const partner = partnerStores.find((p) => p.id === partnerId);
     if (!partner) return false;
 
@@ -3005,8 +3196,9 @@ export const ERPProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const transactionItems: PartnerTransactionItem[] = [];
 
     // 1. Deduct stock from products if matching productId or productName
-    setProducts((prev) =>
-      prev.map((p) => {
+    let updatedProducts: Product[] = [];
+    setProducts((prev) => {
+      updatedProducts = prev.map((p) => {
         const item = items.find((i) => (i.productId && i.productId === p.id) || (i.productName && i.productName.toLowerCase().trim() === p.name.toLowerCase().trim() && (i.model || '') === (p.model || '')));
         if (!item) return p;
 
@@ -3021,8 +3213,10 @@ export const ERPProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           const storeQty = Math.max(0, (p.quantityStore || 0) - item.quantity);
           return { ...p, quantityStore: storeQty };
         }
-      })
-    );
+      });
+      try { localStorage.setItem('erp_products', JSON.stringify(updatedProducts)); } catch {}
+      return updatedProducts;
+    });
 
     // Build items
     items.forEach((item) => {
@@ -3045,13 +3239,16 @@ export const ERPProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
 
     // 2. Increase partner's debt balance (+)
-    setPartnerStores((prev) =>
-      prev.map((s) =>
+    let updatedStores: PartnerStore[] = [];
+    setPartnerStores((prev) => {
+      updatedStores = prev.map((s) =>
         s.id === partnerId
           ? { ...s, debtBalanceUzs: s.debtBalanceUzs + totalTransactionValue }
           : s
-      )
-    );
+      );
+      try { localStorage.setItem('erp_partner_stores', JSON.stringify(updatedStores)); } catch {}
+      return updatedStores;
+    });
 
     // 3. Record transaction
     const newTrans: PartnerTransaction = {
@@ -3065,7 +3262,13 @@ export const ERPProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       addedBy: currentUser?.name || 'Kassir',
       note,
     };
-    setPartnerTransactions((prev) => [newTrans, ...prev]);
+    let updatedTrans: PartnerTransaction[] = [];
+    setPartnerTransactions((prev) => {
+      updatedTrans = [newTrans, ...prev];
+      try { localStorage.setItem('erp_partner_transactions', JSON.stringify(updatedTrans)); } catch {}
+      triggerServerSync({ products: updatedProducts, partnerStores: updatedStores, partnerTransactions: updatedTrans });
+      return updatedTrans;
+    });
 
     return true;
   };
@@ -3087,76 +3290,84 @@ export const ERPProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }>,
     note?: string
   ) => {
+    lastLocalActionTimeRef.current = Date.now() + 6000;
     const partner = partnerStores.find((p) => p.id === partnerId);
     if (!partner) return;
 
     let totalTransactionValue = 0;
     const transactionItems: PartnerTransactionItem[] = [];
 
-    items.forEach((item) => {
-      const lineTotalUzs = Math.round(item.quantity * item.costPrice);
-      totalTransactionValue += lineTotalUzs;
+    let updatedProducts: Product[] = [];
+    setProducts((prev) => {
+      const currentList = [...prev];
+      items.forEach((item) => {
+        const lineTotalUzs = Math.round(item.quantity * item.costPrice);
+        totalTransactionValue += lineTotalUzs;
 
-      transactionItems.push({
-        productId: item.productId,
-        productName: item.productName,
-        model: item.model || '',
-        unitType: item.unitType,
-        rollsCount: item.rollsCount,
-        metersPerRoll: item.metersPerRoll,
-        quantity: item.quantity,
-        currency: item.currency || 'UZS',
-        priceValue: item.priceValue || item.costPrice,
-        priceUzs: item.costPrice,
-        totalUzs: lineTotalUzs,
-      });
-
-      // Update or create product in store inventory
-      if (item.productId) {
-        setProducts((prev) =>
-          prev.map((p) => {
-            if (p.id !== item.productId) return p;
-            if (p.unitType === 'metr') {
-              return {
-                ...p,
-                totalMetersStore: (p.totalMetersStore || 0) + item.quantity,
-                rollsInStore: (p.rollsInStore || 0) + (item.rollsCount || 0),
-                metersPerRoll: item.metersPerRoll || p.metersPerRoll || 50,
-              };
-            } else if (p.unitType === 'kg') {
-              return { ...p, totalKgStore: (p.totalKgStore || 0) + item.quantity };
-            } else {
-              return { ...p, quantityStore: (p.quantityStore || 0) + item.quantity };
-            }
-          })
-        );
-      } else {
-        const newProd: Product = {
-          id: `prod-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
-          name: item.productName,
-          model: item.model || 'Standart',
+        transactionItems.push({
+          productId: item.productId,
+          productName: item.productName,
+          model: item.model || '',
           unitType: item.unitType,
-          costPrice: item.costPrice,
-          salePrice: item.salePrice || Math.round(item.costPrice * 1.25),
-          minAlertStock: 10,
-          rollsInStore: item.unitType === 'metr' ? (item.rollsCount || 1) : undefined,
-          metersPerRoll: item.unitType === 'metr' ? (item.metersPerRoll || item.quantity) : undefined,
-          quantityStore: item.unitType === 'dona' ? item.quantity : 0,
-          totalMetersStore: item.unitType === 'metr' ? item.quantity : 0,
-          totalKgStore: item.unitType === 'kg' ? item.quantity : 0,
-        };
-        setProducts((prev) => [newProd, ...prev]);
-      }
+          rollsCount: item.rollsCount,
+          metersPerRoll: item.metersPerRoll,
+          quantity: item.quantity,
+          currency: item.currency || 'UZS',
+          priceValue: item.priceValue || item.costPrice,
+          priceUzs: item.costPrice,
+          totalUzs: lineTotalUzs,
+        });
+
+        // Update or create product in store inventory
+        if (item.productId) {
+          const pIndex = currentList.findIndex((p) => p.id === item.productId);
+          if (pIndex >= 0) {
+            const p = { ...currentList[pIndex] };
+            if (p.unitType === 'metr') {
+              p.totalMetersStore = (p.totalMetersStore || 0) + item.quantity;
+              p.rollsInStore = (p.rollsInStore || 0) + (item.rollsCount || 0);
+              p.metersPerRoll = item.metersPerRoll || p.metersPerRoll || 50;
+            } else if (p.unitType === 'kg') {
+              p.totalKgStore = (p.totalKgStore || 0) + item.quantity;
+            } else {
+              p.quantityStore = (p.quantityStore || 0) + item.quantity;
+            }
+            currentList[pIndex] = p;
+          }
+        } else {
+          const newProd: Product = {
+            id: `prod-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+            name: item.productName,
+            model: item.model || 'Standart',
+            unitType: item.unitType,
+            costPrice: item.costPrice,
+            salePrice: item.salePrice || Math.round(item.costPrice * 1.25),
+            minAlertStock: 10,
+            rollsInStore: item.unitType === 'metr' ? (item.rollsCount || 1) : undefined,
+            metersPerRoll: item.unitType === 'metr' ? (item.metersPerRoll || item.quantity) : undefined,
+            quantityStore: item.unitType === 'dona' ? item.quantity : 0,
+            totalMetersStore: item.unitType === 'metr' ? item.quantity : 0,
+            totalKgStore: item.unitType === 'kg' ? item.quantity : 0,
+          };
+          currentList.unshift(newProd);
+        }
+      });
+      updatedProducts = currentList;
+      try { localStorage.setItem('erp_products', JSON.stringify(updatedProducts)); } catch {}
+      return updatedProducts;
     });
 
     // Reduce partner's debt balance / Increase our debt (-)
-    setPartnerStores((prev) =>
-      prev.map((s) =>
+    let updatedStores: PartnerStore[] = [];
+    setPartnerStores((prev) => {
+      updatedStores = prev.map((s) =>
         s.id === partnerId
           ? { ...s, debtBalanceUzs: s.debtBalanceUzs - totalTransactionValue }
           : s
-      )
-    );
+      );
+      try { localStorage.setItem('erp_partner_stores', JSON.stringify(updatedStores)); } catch {}
+      return updatedStores;
+    });
 
     // Record transaction
     const newTrans: PartnerTransaction = {
@@ -3170,7 +3381,13 @@ export const ERPProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       addedBy: currentUser?.name || 'Kassir',
       note,
     };
-    setPartnerTransactions((prev) => [newTrans, ...prev]);
+    let updatedTrans: PartnerTransaction[] = [];
+    setPartnerTransactions((prev) => {
+      updatedTrans = [newTrans, ...prev];
+      try { localStorage.setItem('erp_partner_transactions', JSON.stringify(updatedTrans)); } catch {}
+      triggerServerSync({ products: updatedProducts, partnerStores: updatedStores, partnerTransactions: updatedTrans });
+      return updatedTrans;
+    });
   };
 
   const settlePartnerPayment = (
@@ -3180,18 +3397,24 @@ export const ERPProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     paymentType: 'naqd' | 'karta',
     note?: string
   ) => {
+    lastLocalActionTimeRef.current = Date.now() + 6000;
     const partner = partnerStores.find((p) => p.id === partnerId);
     if (!partner) return;
 
+    let updatedStores: PartnerStore[] = [];
+    let updatedTrans: PartnerTransaction[] = [];
+
     if (direction === 'partner_paid_us') {
       // Partner paid us money => Partner debt balance decreases (-)
-      setPartnerStores((prev) =>
-        prev.map((s) =>
+      setPartnerStores((prev) => {
+        updatedStores = prev.map((s) =>
           s.id === partnerId
             ? { ...s, debtBalanceUzs: s.debtBalanceUzs - amountUzs }
             : s
-        )
-      );
+        );
+        try { localStorage.setItem('erp_partner_stores', JSON.stringify(updatedStores)); } catch {}
+        return updatedStores;
+      });
 
       const trans: PartnerTransaction = {
         id: `ptrans-${Date.now()}`,
@@ -3204,16 +3427,23 @@ export const ERPProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         addedBy: currentUser?.name || 'Kassir',
         note,
       };
-      setPartnerTransactions((prev) => [trans, ...prev]);
+      setPartnerTransactions((prev) => {
+        updatedTrans = [trans, ...prev];
+        try { localStorage.setItem('erp_partner_transactions', JSON.stringify(updatedTrans)); } catch {}
+        triggerServerSync({ partnerStores: updatedStores, partnerTransactions: updatedTrans });
+        return updatedTrans;
+      });
     } else {
       // We paid partner money => Partner debt balance increases / Our debt decreases (+)
-      setPartnerStores((prev) =>
-        prev.map((s) =>
+      setPartnerStores((prev) => {
+        updatedStores = prev.map((s) =>
           s.id === partnerId
             ? { ...s, debtBalanceUzs: s.debtBalanceUzs + amountUzs }
             : s
-        )
-      );
+        );
+        try { localStorage.setItem('erp_partner_stores', JSON.stringify(updatedStores)); } catch {}
+        return updatedStores;
+      });
 
       const trans: PartnerTransaction = {
         id: `ptrans-${Date.now()}`,
@@ -3226,32 +3456,61 @@ export const ERPProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         addedBy: currentUser?.name || 'Kassir',
         note,
       };
-      setPartnerTransactions((prev) => [trans, ...prev]);
+      setPartnerTransactions((prev) => {
+        updatedTrans = [trans, ...prev];
+        try { localStorage.setItem('erp_partner_transactions', JSON.stringify(updatedTrans)); } catch {}
+        triggerServerSync({ partnerStores: updatedStores, partnerTransactions: updatedTrans });
+        return updatedTrans;
+      });
     }
   };
 
   const deletePartnerTransaction = (transactionId: string) => {
-    setPartnerTransactions((prev) => prev.filter((t) => t.id !== transactionId));
+    lastLocalActionTimeRef.current = Date.now() + 6000;
+    setPartnerTransactions((prev) => {
+      const updated = prev.filter((t) => t.id !== transactionId);
+      try { localStorage.setItem('erp_partner_transactions', JSON.stringify(updated)); } catch {}
+      triggerServerSync({ partnerTransactions: updated });
+      return updated;
+    });
   };
 
   // Supplier & Stock Intake Actions (Kirim / Postavka)
   const addSupplier = (supplierData: Omit<Supplier, 'id' | 'createdAt' | 'debtBalanceUzs'>): Supplier => {
+    lastLocalActionTimeRef.current = Date.now() + 6000;
     const newSupplier: Supplier = {
       ...supplierData,
       id: `supp-${Date.now()}`,
       debtBalanceUzs: 0,
       createdAt: new Date().toISOString().split('T')[0],
     };
-    setSuppliers((prev) => [newSupplier, ...prev]);
+    setSuppliers((prev) => {
+      const updated = [newSupplier, ...prev];
+      try { localStorage.setItem('erp_suppliers', JSON.stringify(updated)); } catch {}
+      triggerServerSync({ suppliers: updated });
+      return updated;
+    });
     return newSupplier;
   };
 
   const updateSupplier = (id: string, supplierData: Partial<Supplier>) => {
-    setSuppliers((prev) => prev.map((s) => (s.id === id ? { ...s, ...supplierData } : s)));
+    lastLocalActionTimeRef.current = Date.now() + 6000;
+    setSuppliers((prev) => {
+      const updated = prev.map((s) => (s.id === id ? { ...s, ...supplierData } : s));
+      try { localStorage.setItem('erp_suppliers', JSON.stringify(updated)); } catch {}
+      triggerServerSync({ suppliers: updated });
+      return updated;
+    });
   };
 
   const deleteSupplier = (id: string) => {
-    setSuppliers((prev) => prev.filter((s) => s.id !== id));
+    lastLocalActionTimeRef.current = Date.now() + 6000;
+    setSuppliers((prev) => {
+      const updated = prev.filter((s) => s.id !== id);
+      try { localStorage.setItem('erp_suppliers', JSON.stringify(updated)); } catch {}
+      triggerServerSync({ suppliers: updated });
+      return updated;
+    });
   };
 
   const addStockIntake = (intakeData: Omit<StockIntake, 'id' | 'intakeNumber' | 'date' | 'addedBy'>): StockIntake => {
@@ -3389,9 +3648,13 @@ export const ERPProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const repaySupplierDebt = (supplierId: string, amountUzs: number, paymentType: 'naqd' | 'karta', note?: string) => {
-    setSuppliers((prev) =>
-      prev.map((s) => (s.id === supplierId ? { ...s, debtBalanceUzs: s.debtBalanceUzs - amountUzs } : s))
-    );
+    lastLocalActionTimeRef.current = Date.now() + 6000;
+    let updatedSuppliers: Supplier[] = [];
+    setSuppliers((prev) => {
+      updatedSuppliers = prev.map((s) => (s.id === supplierId ? { ...s, debtBalanceUzs: s.debtBalanceUzs - amountUzs } : s));
+      try { localStorage.setItem('erp_suppliers', JSON.stringify(updatedSuppliers)); } catch {}
+      return updatedSuppliers;
+    });
 
     const supplierObj = suppliers.find((s) => s.id === supplierId);
     const newPayment: SupplierPayment = {
@@ -3404,11 +3667,23 @@ export const ERPProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       addedBy: currentUser?.name || 'Bosh Administrator',
       note,
     };
-    setSupplierPayments((prev) => [newPayment, ...prev]);
+    let updatedPayments: SupplierPayment[] = [];
+    setSupplierPayments((prev) => {
+      updatedPayments = [newPayment, ...prev];
+      try { localStorage.setItem('erp_supplier_payments', JSON.stringify(updatedPayments)); } catch {}
+      triggerServerSync({ suppliers: updatedSuppliers, supplierPayments: updatedPayments });
+      return updatedPayments;
+    });
   };
 
   const deleteStockIntake = (id: string) => {
-    setStockIntakes((prev) => prev.filter((i) => i.id !== id));
+    lastLocalActionTimeRef.current = Date.now() + 6000;
+    setStockIntakes((prev) => {
+      const updated = prev.filter((i) => i.id !== id);
+      try { localStorage.setItem('erp_stock_intakes', JSON.stringify(updated)); } catch {}
+      triggerServerSync({ stockIntakes: updated });
+      return updated;
+    });
   };
 
   // Real-time cross-tab storage sync
